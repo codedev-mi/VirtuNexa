@@ -1,7 +1,0 @@
- Develop a Java application that allows users to convert between different currencies, using a fixed or real-time conversion rate (optional).
-
-Structure:
-     -User Interface: Design a console-based or GUI interface using Java frameworks (e.g., Swing, JavaFX, or simple CLI for basic functionality).
-     -Expense Management: Implement features for adding, editing, and deleting expenses, and categorizing them.
-     -Reports: Generate expense reports, showing detailed breakdowns and summaries of expenses over time.
-
