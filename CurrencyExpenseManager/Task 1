@@ -1,0 +1,18 @@
+Goal:
+ Develop a Java application that allows users to convert between different currencies.
+
+Structure:
+     -User Interface: Design a console-based or GUI interface using Java frameworks.
+     -Expense Management: Implement features for adding and categorizing them.
+     -Reports: Generate expense reports, showing detailed breakdowns and summaries of expenses over time.
+
+Technologies:
+     -Java: For developing the application’s core logic and features.
+     -JDBC/SQLite: For database interaction (to store and retrieve expense data).
+     -Swing: For building a GUI for better user interaction (if not a console application).
+
+Checklist:
+     -Design the system for expense tracking with relevant fields (amount, category, date, etc.).
+     -Implement a report generation system that displays detailed reports of expenses.
+     -Integrate database storage (e.g., SQLite) to persist the expense data.
+
