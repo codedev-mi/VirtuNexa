@@ -12,16 +12,3 @@ Technologies:
 -JDBC/SQLite: For database interaction (to store and retrieve application data).
 -Swing/JavaFX (Optional): For building a GUI for enhanced user interaction.
 
-Deliverables:
--Complete Java project files (including source code and necessary configuration files).
--Executable JAR file for running the application.
--Documentation of the application's functionality, usage, and setup.
-
-Checklist:
--Design the user interface (console or GUI) to align with the application's goals.
--Implement core functionality using modular Java methods and classes.
--Integrate data storage mechanisms if specified (e.g., databases, JSON files).
--Ensure robust error handling and input validation.
--Test the application in different environments (e.g., various Java versions, operating systems).
--Package the project files, executable JAR, and documentation for submission.
-
