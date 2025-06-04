@@ -129,112 +129,112 @@ class DatabaseHelper {
 
 // GUI for the Cipher Tool with JDBC
 public class CipherToolGUI {
-    private static JTextField textField;
-    private static JTextField keyField;
-    private static JTextArea resultArea;
-    private static JTextArea historyArea;
+ private static JTextField textField;
+ private static JTextField keyField;
+ private static JTextArea resultArea;
+ private static JTextArea historyArea;
+ private static JComboBox<String> cipherSelector;
 
-    public static void main(String[] args) {
-        // Create frame and layout
-        JFrame frame = new JFrame("Cipher Tool");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(600, 600);
-        frame.setLayout(new BorderLayout(10, 10));
+ public static void main(String[] args) {
+     JFrame frame = new JFrame("Cipher Tool");
+     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+     frame.setSize(700, 600);
+     frame.setLayout(new BorderLayout(10, 10));
 
-        // Create panel for input fields and buttons
-        JPanel inputPanel = new JPanel();
-        inputPanel.setLayout(new GridLayout(4, 2, 10, 10));
+     // Input Panel
+     JPanel inputPanel = new JPanel(new GridLayout(5, 2, 10, 10));
+     inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Text input field
-        JLabel textLabel = new JLabel("Enter Text:");
-        textField = new JTextField(20);
-        inputPanel.add(textLabel);
-        inputPanel.add(textField);
+     textField = new JTextField();
+     keyField = new JTextField();
 
-        // Key input field
-        JLabel keyLabel = new JLabel("Enter Key:");
-        keyField = new JTextField(20);
-        inputPanel.add(keyLabel);
-        inputPanel.add(keyField);
+     cipherSelector = new JComboBox<>(new String[]{"Caesar Cipher", "Vigenere Cipher"});
 
-        // Encrypt and Decrypt Buttons
-        JButton encryptButton = new JButton("Encrypt");
-        JButton decryptButton = new JButton("Decrypt");
-        inputPanel.add(encryptButton);
-        inputPanel.add(decryptButton);
+     JButton encryptButton = new JButton("Encrypt");
+     JButton decryptButton = new JButton("Decrypt");
 
-        // Add inputPanel to the frame
-        frame.add(inputPanel, BorderLayout.NORTH);
+     inputPanel.add(new JLabel("Enter Text:"));
+     inputPanel.add(textField);
+     inputPanel.add(new JLabel("Enter Key:"));
+     inputPanel.add(keyField);
+     inputPanel.add(new JLabel("Select Cipher:"));
+     inputPanel.add(cipherSelector);
+     inputPanel.add(encryptButton);
+     inputPanel.add(decryptButton);
 
-        // Result output area
-        resultArea = new JTextArea(5, 40);
-        resultArea.setEditable(false);
-        JScrollPane resultScroll = new JScrollPane(resultArea);
-        frame.add(resultScroll, BorderLayout.CENTER);
+     frame.add(inputPanel, BorderLayout.NORTH);
 
-        // History section with label
-        JPanel historyPanel = new JPanel();
-        historyPanel.setLayout(new BorderLayout(5, 5));
-        
-        JLabel historyLabel = new JLabel("History:");
-        historyPanel.add(historyLabel, BorderLayout.NORTH);
+     // Result Area
+     resultArea = new JTextArea(5, 40);
+     resultArea.setEditable(false);
+     resultArea.setBorder(BorderFactory.createTitledBorder("Result"));
+     frame.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
-        historyArea = new JTextArea(10, 40);
-        historyArea.setEditable(false);
-        JScrollPane historyScroll = new JScrollPane(historyArea);
-        historyPanel.add(historyScroll, BorderLayout.CENTER);
+     // History Panel
+     JPanel historyPanel = new JPanel(new BorderLayout(5, 5));
+     historyPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        frame.add(historyPanel, BorderLayout.SOUTH);
+     historyArea = new JTextArea(10, 40);
+     historyArea.setEditable(false);
+     JScrollPane historyScroll = new JScrollPane(historyArea);
 
-        // Exit Button
-        JButton exitButton = new JButton("Exit");
-        frame.add(exitButton, BorderLayout.EAST);
+     JButton clearHistoryBtn = new JButton("Clear History");
+     clearHistoryBtn.addActionListener(e -> {
+         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:cipher_history.db")) {
+             conn.createStatement().execute("DELETE FROM cipher_history");
+             loadHistory();
+         } catch (SQLException ex) {
+             resultArea.setText("Error clearing history: " + ex.getMessage());
+         }
+     });
 
-        // Action listeners for Encrypt and Decrypt buttons
-        encryptButton.addActionListener(e -> processAction(true));
-        decryptButton.addActionListener(e -> processAction(false));
+     historyPanel.add(new JLabel("History:"), BorderLayout.NORTH);
+     historyPanel.add(historyScroll, BorderLayout.CENTER);
+     historyPanel.add(clearHistoryBtn, BorderLayout.SOUTH);
 
-        // Action listener for Exit button
-        exitButton.addActionListener(e -> System.exit(0));
+     frame.add(historyPanel, BorderLayout.SOUTH);
 
-        // Set frame visibility
-        frame.setVisible(true);
+     // Exit Button
+     JButton exitButton = new JButton("Exit");
+     exitButton.addActionListener(e -> System.exit(0));
+     frame.add(exitButton, BorderLayout.EAST);
 
-        // Load history on startup
-        loadHistory();
-    }
+     // Action listeners
+     encryptButton.addActionListener(e -> processAction(true));
+     decryptButton.addActionListener(e -> processAction(false));
 
-    private static void processAction(boolean isEncrypt) {
-        String text = textField.getText();
-        String key = keyField.getText();
-        if (text.isEmpty() || key.isEmpty()) {
-            resultArea.setText("Error: Text and Key must not be empty.");
-            return;
-        }
+     frame.setVisible(true);
+     loadHistory();
+ }
 
-        CipherAlgorithm cipher = new CaesarCipher(); // Default to Caesar Cipher
-        String result;
-        try {
-            if (isEncrypt) {
-                result = cipher.encrypt(text, key);
-            } else {
-                result = cipher.decrypt(text, key);
-            }
-            resultArea.setText("Result: " + result);
+ private static void processAction(boolean isEncrypt) {
+     String text = textField.getText();
+     String key = keyField.getText();
+     String cipherType = (String) cipherSelector.getSelectedItem();
 
-            // Save to database
-            String action = isEncrypt ? "encrypt" : "decrypt";
-            DatabaseHelper.saveHistory(text, key, action, result);
+     if (text.isEmpty() || key.isEmpty()) {
+         resultArea.setText("Error: Text and Key must not be empty.");
+         return;
+     }
 
-            // Load updated history
-            loadHistory();
-        } catch (IllegalArgumentException e) {
-            resultArea.setText("Error: " + e.getMessage());
-        }
-    }
+     CipherAlgorithm cipher = switch (cipherType) {
+         case "Vigenere Cipher" -> new VigenereCipher();
+         default -> new CaesarCipher();
+     };
 
-    private static void loadHistory() {
-        List<String> history = DatabaseHelper.getHistory();
-        historyArea.setText(String.join("\n", history));
-    }
+     try {
+         String result = isEncrypt ? cipher.encrypt(text, key) : cipher.decrypt(text, key);
+         resultArea.setText("Result: " + result);
+
+         DatabaseHelper.saveHistory(text, key, isEncrypt ? "encrypt" : "decrypt", result);
+         loadHistory();
+     } catch (Exception e) {
+         resultArea.setText("Error: " + e.getMessage());
+     }
+ }
+
+ private static void loadHistory() {
+     List<String> history = DatabaseHelper.getHistory();
+     historyArea.setText(String.join("\n", history));
+ }
 }
