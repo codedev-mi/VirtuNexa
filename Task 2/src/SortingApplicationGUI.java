@@ -1,26 +1,14 @@
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.sql.*;
+import java.util.*;
 import java.util.stream.Collectors;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
 public class SortingApplicationGUI {
+
+    private static JTextField inputField;
+    private static JTextArea resultArea;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(SortingApplicationGUI::createAndShowGUI);
@@ -29,37 +17,52 @@ public class SortingApplicationGUI {
     private static void createAndShowGUI() {
         JFrame frame = new JFrame("Sorting Application");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(550, 450);
+        frame.setSize(600, 500);
 
+        // Panel for inputs
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(5, 1));
+        panel.setLayout(new GridLayout(5, 1, 10, 10));
 
+        // Input for numbers
         JLabel inputLabel = new JLabel("Enter numbers separated by spaces:");
-        JTextField inputField = new JTextField();
+        inputField = new JTextField();
         panel.add(inputLabel);
         panel.add(inputField);
 
+        // Dropdown for sorting order
         JLabel orderLabel = new JLabel("Choose sorting order:");
         String[] options = {"Ascending", "Descending"};
         JComboBox<String> orderComboBox = new JComboBox<>(options);
         panel.add(orderLabel);
         panel.add(orderComboBox);
 
+        // Panel for buttons
+        JPanel buttonPanel = new JPanel();
         JButton sortButton = new JButton("Sort and Save");
-        panel.add(sortButton);
+        JButton clearButton = new JButton("Clear");
+        JButton viewHistoryButton = new JButton("View History");
+        buttonPanel.add(sortButton);
+        buttonPanel.add(clearButton);
+        buttonPanel.add(viewHistoryButton);
+        panel.add(buttonPanel);
 
-        JTextArea resultArea = new JTextArea();
+        // Output area
+        resultArea = new JTextArea();
         resultArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(resultArea);
+
+        // Layout
         frame.add(panel, BorderLayout.NORTH);
-        frame.add(new JScrollPane(resultArea), BorderLayout.CENTER);
+        frame.add(scrollPane, BorderLayout.CENTER);
 
+        // Action: Sort and Save
         sortButton.addActionListener(e -> {
-            String input = inputField.getText();
+            String input = inputField.getText().trim();
             String order = (String) orderComboBox.getSelectedItem();
-
             List<Integer> numbers = parseInput(input);
+
             if (numbers.isEmpty()) {
-                resultArea.setText("Invalid input. Please enter numbers separated by spaces.");
+                resultArea.setText("⚠️ Invalid input: Please enter numbers separated by spaces.");
                 return;
             }
 
@@ -72,6 +75,23 @@ public class SortingApplicationGUI {
             }
 
             saveToDatabase(numbers, "Ascending".equals(order) ? 1 : 2);
+            resultArea.append("\n✅ Result saved to database.");
+        });
+
+        // Action: Clear
+        clearButton.addActionListener(e -> {
+            inputField.setText("");
+            resultArea.setText("");
+        });
+
+        // Action: View History
+        viewHistoryButton.addActionListener(e -> {
+            List<String> history = getHistoryFromDatabase();
+            if (history.isEmpty()) {
+                resultArea.setText("No history found.");
+            } else {
+                resultArea.setText("📜 History:\n" + String.join("\n", history));
+            }
         });
 
         frame.setVisible(true);
@@ -102,8 +122,11 @@ public class SortingApplicationGUI {
 
     private static void saveToDatabase(List<Integer> numbers, int order) {
         String dbUrl = "jdbc:sqlite:sorting_app.db";
-        String createTableQuery = "CREATE TABLE IF NOT EXISTS sorted_numbers (id INTEGER PRIMARY KEY AUTOINCREMENT, numbers TEXT, order_type TEXT);";
-        String insertQuery = "INSERT INTO sorted_numbers (numbers, order_type) VALUES (?, ?);";
+        String createTableQuery = "CREATE TABLE IF NOT EXISTS sorted_numbers (" +
+                "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                "numbers TEXT NOT NULL, " +
+                "order_type TEXT NOT NULL)";
+        String insertQuery = "INSERT INTO sorted_numbers (numbers, order_type) VALUES (?, ?)";
 
         try (Connection conn = DriverManager.getConnection(dbUrl);
              Statement stmt = conn.createStatement()) {
@@ -115,10 +138,30 @@ public class SortingApplicationGUI {
                 pstmt.setString(2, order == 1 ? "Ascending" : "Descending");
                 pstmt.executeUpdate();
             }
-
-            System.out.println("Sorted data saved to the database.");
         } catch (SQLException e) {
-            System.out.println("Database error: " + e.getMessage());
+            resultArea.setText("❌ Database error: " + e.getMessage());
         }
+    }
+
+    private static List<String> getHistoryFromDatabase() {
+        List<String> history = new ArrayList<>();
+        String dbUrl = "jdbc:sqlite:sorting_app.db";
+        String selectQuery = "SELECT numbers, order_type FROM sorted_numbers ORDER BY id DESC";
+
+        try (Connection conn = DriverManager.getConnection(dbUrl);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(selectQuery)) {
+
+            while (rs.next()) {
+                String numbers = rs.getString("numbers");
+                String order = rs.getString("order_type");
+                history.add("Order: " + order + ", Numbers: " + numbers);
+            }
+
+        } catch (SQLException e) {
+            history.add("❌ Error retrieving history: " + e.getMessage());
+        }
+
+        return history;
     }
 }
